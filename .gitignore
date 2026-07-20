@@ -9,4 +9,6 @@ uploads/
 node_modules/
 frontend_dist/*
 !frontend_dist/.gitkeep
-nscripts/e2e_logs/nscripts/*.logn
+scripts/e2e_logs/
+scripts/*.log
+*.log
