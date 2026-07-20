@@ -1,0 +1,13 @@
+{
+  "name": "dianshang_project",
+  "version": "1.0.0",
+  "description": "基于《后端接口需求文档 v1.0》实现的 FastAPI 后端，采用分层架构：",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+data/
+uploads/
+*.db
+.pytest_cache/
+node_modules/
+frontend_dist/*
+!frontend_dist/.gitkeep

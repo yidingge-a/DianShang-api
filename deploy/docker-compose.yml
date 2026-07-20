@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dianshang
+      POSTGRES_PASSWORD: dianshang_secret
+      POSTGRES_DB: ecommerce
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dianshang -d ecommerce"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://dianshang:dianshang_secret@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379/0
+      CELERY_ENABLED: "true"
+      APP_ENV: prod
+      DEBUG: "false"
+      BASE_URL: http://localhost
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://dianshang:dianshang_secret@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379/0
+      CELERY_ENABLED: "true"
+      APP_ENV: prod
+      DEBUG: "false"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      - api
+    command: celery -A app.celery_app.celery_app worker --loglevel=info
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../frontend_dist:/usr/share/nginx/html:ro
+      - uploads_data:/app/uploads:ro
+    depends_on:
+      - api
+
+volumes:
+  pg_data:
+  uploads_data:
