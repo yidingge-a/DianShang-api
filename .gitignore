@@ -7,6 +7,10 @@ uploads/
 *.db
 .pytest_cache/
 node_modules/
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/*.log
 frontend_dist/*
 !frontend_dist/.gitkeep
 scripts/e2e_logs/

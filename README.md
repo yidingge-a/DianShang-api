@@ -37,6 +37,19 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - API 文档：http://localhost:8000/docs
 - 基础路径：`http://localhost:8000/api/v1`
 
+
+## 前端（同仓 `frontend/`）
+
+```bash
+cd /home/honor/dianshang-api
+bash scripts/build_frontend.sh   # 产物 → frontend_dist/
+# 开发联调也可：
+cd frontend && npm install && VITE_DISABLE_NOCODE=1 VITE_DISABLE_AUTH=1 npm run dev
+```
+
+CVM 部署：`git pull` → `bash scripts/build_frontend.sh` → `cd deploy && docker compose up -d --build`
+
+
 ## 模块与路由
 
 | 模块 | 前缀 |

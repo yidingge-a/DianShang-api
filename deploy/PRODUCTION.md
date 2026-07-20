@@ -22,11 +22,12 @@ OPENAI_API_KEY=...
 ## 2. 前端构建
 
 ```bash
-cd nocode/nocode
-npm ci
-npm run build
-cp -r build ../DianShang_project/frontend_dist
-# 或 Windows: xcopy build ..\DianShang_project\frontend_dist /E /I
+cd /home/ubuntu/DianShang-api   # CVM 路径
+bash scripts/build_frontend.sh
+cd deploy
+# 建议对外端口 9080，避免与 sea-platform 抢 80
+grep -q '9080:80' docker-compose.yml || sed -i 's/"80:80"/"9080:80"/' docker-compose.yml
+docker compose up -d --build
 ```
 
 ## 3. Docker 一键启动
