@@ -8,10 +8,12 @@ import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AuthModal from "./components/AuthModal.jsx";
 
 const queryClient = new QueryClient();
 
-const PUBLIC_PATHS = new Set(["/login", "/register"]);
+// 首页可逛；登录/注册页公开；其余功能页需登录
+const PUBLIC_PATHS = new Set(["/", "/login", "/register"]);
 
 const authRequired = import.meta.env.VITE_DISABLE_AUTH !== '1';
 
@@ -23,6 +25,7 @@ const App = () => (
           <Toaster />
           <HashRouter>
             <Navigation />
+            <AuthModal />
             <Routes>
               {navItems.map(({ to, page }) => (
                 <Route

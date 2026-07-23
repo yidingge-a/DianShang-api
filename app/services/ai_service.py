@@ -161,21 +161,200 @@ class AIService:
         self, product_name: str, description: str, style: str, sections: list | None
     ) -> str | None:
         text = llm_client.chat(
-            "你是电商详情页设计师。输出 HTML 片段（不含 html/head/body 标签），"
-            "含标题、卖点列表、分段描述，内联简单样式，宽度适配750px。",
+            "你是资深电商详情页文案与版式设计师，专门为淘宝/天猫/京东详情长图撰写文案。"
+            "必须遵循 Skill goods-images；页面风格必须采用用户给定 style；"
+            "selling_points/description 可为空，为空时不要编造夸张卖点。"
+            "输出 HTML 片段（不含 html/head/body），宽度适配 750px："
+            "含商品主标题、一句话卖点、3-5 条核心卖点列表、简短规格说明；"
+            "语气专业、转化导向，禁止夸张违禁词（最、第一、绝对等）。",
             json.dumps(
                 {
+                    "skill": "goods-images",
                     "product_name": product_name,
-                    "description": description,
+                    "selling_points": description or "",
+                    "product_description": description or "",
                     "style": style,
                     "sections": sections or [],
                 },
                 ensure_ascii=False,
             ),
-            temperature=0.6,
+            temperature=0.45,
             max_tokens=1500,
         )
         return text or None
+
+    def plan_detail_page_sections(
+        self,
+        product_name: str,
+        description: str,
+        style: str,
+        *,
+        section_count: int = 9,
+        vision_hint: str = "",
+        style_label: str = "",
+        skill: str = "goods-images",
+        vision_selling_points: str = "",
+        selling_points_primary: bool = False,
+    ) -> list[dict]:
+        """按 goods-images Skill 规划详情图分屏。
+
+        - 风格必传
+        - 用户卖点为主；识图卖点为辅（用户留空时识图卖点已并入 description）
+        """
+        section_count = max(4, min(int(section_count or 9), 9))
+        style_map = {
+            "modern": "现代简约",
+            "minimal": "极简风格",
+            "luxury": "奢华风格",
+            "cute": "可爱风格",
+        }
+        style_id = (style or "modern").strip() or "modern"
+        style_name = (style_label or "").strip() or style_map.get(style_id, "现代简约")
+        selling_points = description if description is not None else ""
+        selling_points = str(selling_points).strip()
+        vision_sell = str(vision_selling_points or "").strip()
+        skill_slug = (skill or "goods-images").strip() or "goods-images"
+
+        data = llm_client.chat_json(
+            f"你必须加载并严格遵循 Skill `{skill_slug}`（商品详情图生成）。"
+            "当前任务：只规划「详情图」分屏（不要轮播图），输出可直接给文生图模型的 prompt。"
+            "【硬性】"
+            "1. 商品外观必须保真：prompt 要求保留用户原图产品外形/颜色/Logo/图案，只做详情页排版包装。"
+            f"2. 页面风格必须严格采用用户所选风格「{style_name}」（style_id={style_id}），"
+            "每条出图 prompt 都要体现该风格的版式/色调/气质，不得改用其他风格。"
+            "3. 卖点优先级："
+            "selling_points 为用户主卖点（必优先体现）；"
+            "vision_selling_points 为识图辅助卖点（补充材质/外观/结构细节，不得覆盖或改写用户主卖点）。"
+            "若 selling_points 为空且仅有识图信息，则按识图规划，不要编造夸张卖点。"
+            "4. 返回 JSON："
+            '{"analysis":{"category":"","selling_points":[],"audience":"","style":"","keywords":[]},'
+            '"sections":[{"title":"屏标题","module":"主图封面|核心卖点|细节标注|使用场景|规格参数|尺码表|售后保障",'
+            '"prompt":"英文为主出图提示词"}]}'
+            f"5. sections 恰好 {section_count} 条，主题互不重复；优先覆盖 Skill 必选/建议类型。"
+            "6. 每条 prompt 必须含：E-commerce product detail page image, 790px wide, about 1100px tall；"
+            "professional Taobao/Tmall detail page；preserve product appearance from reference photo。"
+            "7. 禁止纯白底无版式静物；背景要有场景感或模块设计感。",
+            json.dumps(
+                {
+                    "skill": skill_slug,
+                    "product_name": product_name,
+                    "selling_points": selling_points,
+                    "selling_points_primary": bool(selling_points_primary),
+                    "vision_selling_points": vision_sell,
+                    "product_description": selling_points,
+                    "style": style_id,
+                    "style_label": style_name,
+                    "preferred_style": style_name,
+                    "vision_hint": vision_hint,
+                    "section_count": section_count,
+                    "task": "generate_detail_images_only",
+                },
+                ensure_ascii=False,
+            ),
+            temperature=0.35,
+            max_tokens=3500,
+            skill_slugs=[skill_slug],
+            auto_skills=True,
+        )
+
+        if isinstance(data, dict) and isinstance(data.get("sections"), list) and data["sections"]:
+            out = []
+            for i, s in enumerate(data["sections"][:section_count]):
+                if not isinstance(s, dict):
+                    continue
+                title = (s.get("title") or f"详情图{i + 1}").strip()
+                prompt = (s.get("prompt") or "").strip()
+                if not prompt:
+                    prompt = self._default_detail_panel_prompt(product_name, description, title, style_name, i)
+                else:
+                    prompt = self._wrap_detail_panel_prompt(prompt, product_name, title, style_name, selling_points)
+                out.append({"title": title, "prompt": prompt, "module": s.get("module") or ""})
+            if out:
+                while len(out) < section_count:
+                    i = len(out)
+                    titles = [
+                        "主图封面", "核心卖点一", "核心卖点二", "核心卖点三",
+                        "细节标注", "使用场景", "规格参数", "尺码参考", "售后保障",
+                    ]
+                    t = titles[i] if i < len(titles) else f"详情屏{i + 1}"
+                    out.append({
+                        "title": t,
+                        "prompt": self._default_detail_panel_prompt(product_name, description, t, style_name, i),
+                        "module": t,
+                    })
+                return out[:section_count]
+
+        defaults = [
+            ("主图封面", 0), ("核心卖点一", 1), ("核心卖点二", 1), ("核心卖点三", 1),
+            ("细节标注", 2), ("使用场景", 3), ("规格参数", 2), ("尺码参考", 2), ("售后保障", 3),
+        ]
+        return [
+            {
+                "title": t,
+                "prompt": self._default_detail_panel_prompt(product_name, description, t, style_name, i),
+                "module": t,
+            }
+            for t, i in defaults[:section_count]
+        ]
+
+    def build_sequential_detail_prompt(
+        self,
+        product_name: str,
+        description: str,
+        style: str,
+        sections: list[dict],
+        vision_hint: str = "",
+    ) -> str:
+        """一组顺序详情页的总提示词（配合 wan enable_sequential）。"""
+        lines = [
+            "Follow Skill goods-images. Generate Taobao DETAIL PAGE images (not plain product photos).",
+            f"Product: {product_name}",
+            f"Description: {(description or 'premium product')[:200]}",
+        ]
+        if vision_hint:
+            lines.append(f"Vision analysis: {vision_hint[:400]}")
+        lines.append(
+            "Hard rules: preserve product appearance from reference photo; each image is a detail-page module "
+            "with title/copy layout + product; 790x1100; no watermark; no QR."
+        )
+        for i, sec in enumerate(sections):
+            title = sec.get("title") or f"panel {i + 1}"
+            prompt = sec.get("prompt") or ""
+            lines.append(f"Image {i + 1} ({title}): {prompt}")
+        return chr(10).join(lines)
+
+    def _wrap_detail_panel_prompt(
+        self,
+        prompt: str,
+        product_name: str,
+        title: str,
+        style_desc: str,
+        selling_points: str = "",
+    ) -> str:
+        sell = (selling_points or "").strip()
+        sell_part = f" Selling points: {sell}." if sell else " Selling points: (none provided)."
+        prefix = (
+            "Follow Skill goods-images. Role: e-commerce detail-page visual designer. "
+            f"Product: {product_name}. Panel: {title}. Style: {style_desc} (required).{sell_part} "
+            "Must be a Taobao detail-page module (title/copy areas + product), NOT a plain cutout photo. "
+            "Preserve product look from reference image. 790x1100, high-res, no watermark, no QR. "
+            "Prompt: "
+        )
+        return prefix + prompt
+
+    def _default_detail_panel_prompt(
+        self, product_name: str, description: str, title: str, style_desc: str, index: int
+    ) -> str:
+        desc = (description or "premium product")[:100]
+        templates = [
+            f"E-commerce hero detail page, 790x1100. Large product photo of {product_name} centered, preserve product appearance. Top bold Chinese title, subtitle, season tag. Style {style_desc}. {desc}",
+            f"Product feature highlight detail page, 790x1100, layout for {product_name}, feature title '{title}', short Chinese description, preserve product look. Style {style_desc}. {desc}",
+            f"Product detail annotation page, 790x1100, center product photo of {product_name} with 4 callouts, preserve appearance. Style {style_desc}. {desc}",
+            f"Lifestyle scene detail page, 790x1100, title '{title}', {product_name} in use, preserve product look. Style {style_desc}. {desc}",
+        ]
+        base = templates[min(index, len(templates) - 1)]
+        return self._wrap_detail_panel_prompt(base, product_name, title, style_desc, description or "")
+
 
     def generate_optimize_suggestions(self, metrics: dict) -> list[dict] | None:
         data = llm_client.chat_json(

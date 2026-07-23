@@ -2,19 +2,27 @@ import { post, get } from '../api.js';
 
 export const smartDesignApi = {
   // 图片智能优化
-  optimizeImage: (data) => post('/smart-design/image/optimize', data),
+  optimizeImage: (data) => post('/smart-design/image/optimize', data, { timeout: 60000 }),
   
   // 白底图制作 / 智能抠图
-  removeBackground: (data) => post('/smart-design/image/background-remove', data),
+  removeBackground: (data) => post('/smart-design/image/background-remove', data, { timeout: 60000 }),
   
   // 图片瑕疵修复
-  repairImage: (data) => post('/smart-design/image/repair', data),
+  repairImage: (data) => post('/smart-design/image/repair', data, { timeout: 60000 }),
   
   // 批量图片处理
   batchProcess: (data) => post('/smart-design/image/batch', data),
   
-  // 生成商品详情页
-  generateDetailPage: (data) => post('/smart-design/detail-page/generate', data),
+  // 可选生图模型
+  listImageModels: () => get('/smart-design/image/models'),
+
+  // 生成商品详情页：立即返回 task_id，前端轮询进度
+  generateDetailPage: (data) =>
+    post('/smart-design/detail-page/generate', data, { timeout: 60000 }),
+  
+  // 万相文生图 / 图生图
+  generateAiImage: (data) =>
+    post('/smart-design/image/generate', data, { timeout: 180000 }),
   
   // 生成主图视频 / 宣传短视频
   generateVideo: (data) => post('/smart-design/video/generate', data),

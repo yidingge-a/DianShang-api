@@ -44,11 +44,22 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 2048
     llm_timeout_seconds: float = 120.0
 
-    # 视觉 / 图像模型（vLLM 等多模态，未部署时留空，走 Pillow 本地处理）
+    # 视觉 / 图像模型（vLLM 或 DashScope 兼容多模态，未部署时留空，走 Pillow）
     vision_api_base: str = ""
     vision_api_key: str = ""
     vision_model: str = ""
     vision_timeout_seconds: float = 180.0
+
+    # 阿里云 DashScope（千问 VL 识图 + 万相文生图/图生图）
+    dashscope_api_key: str = ""
+    dashscope_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
+    dashscope_image_model: str = "wan2.7-image-pro"
+
+    # Gemini 图像（kuaipao.pro generateContent，如 nano-banana-2-2k）
+    gemini_image_api_key: str = ""
+    gemini_image_base_url: str = "https://kuaipao.ai"
+    gemini_image_model: str = "nano-banana-2"
+    gemini_image_timeout_seconds: float = 180.0
 
     # 视频生成（第三方 API，未配置时 ffmpeg 合成）
     video_api_base: str = ""
@@ -100,6 +111,14 @@ class Settings(BaseSettings):
     @property
     def vision_enabled(self) -> bool:
         return bool(self.vision_api_base.strip() and self.vision_model.strip())
+
+    @property
+    def dashscope_enabled(self) -> bool:
+        return bool(self.dashscope_api_key.strip())
+
+    @property
+    def gemini_image_enabled(self) -> bool:
+        return bool(self.gemini_image_api_key.strip())
 
     @property
     def s3_enabled(self) -> bool:

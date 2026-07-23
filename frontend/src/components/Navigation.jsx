@@ -9,7 +9,7 @@ const Navigation = () => {
   const [isNavHovered, setIsNavHovered] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, loggedIn, logout } = useAuth();
+  const { user, loggedIn, logout, openAuth } = useAuth();
 
   const navItems = [
     { name: '首页', path: '/' },
@@ -150,22 +150,31 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-3 ml-4">
             {loggedIn ? (
               <>
-                <span className="text-sm text-gray-600 flex items-center">
-                  <User size={16} className="mr-1" />
-                  {user?.username || user?.email}
-                </span>
                 <button
                   type="button"
-                  onClick={() => { logout(); navigate('/login'); }}
+                  onClick={() => navigate('/account')}
+                  className="text-sm text-gray-700 hover:text-blue-600 flex items-center font-medium"
+                  title="进入个人后台"
+                >
+                  <User size={16} className="mr-1" />
+                  {user?.username || user?.email}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { logout(); navigate('/'); }}
                   className="text-sm text-gray-600 hover:text-blue-600 flex items-center"
                 >
                   <LogOut size={16} className="mr-1" />退出
                 </button>
               </>
             ) : (
-              <Link to="/login" className="text-sm text-blue-600 hover:text-blue-800 flex items-center font-medium">
+              <button
+                type="button"
+                onClick={() => openAuth('login')}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center font-medium"
+              >
                 <LogIn size={16} className="mr-1" />登录
-              </Link>
+              </button>
             )}
           </div>
 
@@ -214,15 +223,30 @@ const Navigation = () => {
               ))}
               <div className="border-t border-gray-200 pt-2 mt-2 px-4">
                 {loggedIn ? (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setIsMenuOpen(false); navigate('/account'); }}
+                      className="text-sm text-blue-600 text-left"
+                    >
+                      个人后台 ({user?.username || user?.email})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { logout(); setIsMenuOpen(false); navigate('/'); }}
+                      className="text-sm text-gray-600 text-left"
+                    >
+                      退出
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    onClick={() => { logout(); setIsMenuOpen(false); navigate('/login'); }}
-                    className="text-sm text-gray-600"
+                    onClick={() => { setIsMenuOpen(false); openAuth('login'); }}
+                    className="text-sm text-blue-600"
                   >
-                    退出 ({user?.username})
+                    登录
                   </button>
-                ) : (
-                  <Link to="/login" onClick={() => setIsMenuOpen(false)} className="text-sm text-blue-600">登录</Link>
                 )}
               </div>
             </div>

@@ -7,3 +7,4 @@ export { pricingApi } from './modules/pricing.js';
 export { marketApi } from './modules/market.js';
 export { publishApi } from './modules/publish.js';
 export { operationApi } from './modules/operation.js';
+export { accountApi } from './modules/account.js';

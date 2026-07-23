@@ -55,6 +55,16 @@ def create_app() -> FastAPI:
         seed_forbidden_words()
         if settings.debug:
             seed_dev_user()
+        # 加载项目 skills/，供所有 LLM 对话注入使用
+        from app.skills import get_skill_registry
+        import logging
+
+        loaded = get_skill_registry().reload()
+        logging.getLogger(__name__).info(
+            "已加载 %s 个 Skill: %s",
+            len(loaded),
+            ", ".join(s.slug for s in loaded) or "(无)",
+        )
 
     return app
 

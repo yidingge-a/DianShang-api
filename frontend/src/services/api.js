@@ -33,6 +33,11 @@ api.interceptors.response.use(
       const error = new Error(data.message || '请求失败');
       error.code = data.code;
       error.data = data.data;
+      // 业务码 401：弹出登录（后端 DEBUG=false 时常见 HTTP 200 + code 401）
+      if (Number(data.code) === 401 && !AUTH_DISABLED) {
+        clearAuth();
+        window.dispatchEvent(new CustomEvent('app:need-auth'));
+      }
       return Promise.reject(error);
     }
     return response;
@@ -60,14 +65,22 @@ api.interceptors.response.use(
 
       if (status === 401 && !AUTH_DISABLED) {
         clearAuth();
+        // 弹出登录框（由 AuthProvider 监听），避免整页硬跳
+        window.dispatchEvent(new CustomEvent('app:need-auth'));
         const onLogin = window.location.hash.includes('/login');
-        if (!onLogin) {
-          window.location.href = '/#/login';
+        if (!onLogin && window.location.hash.includes('/register')) {
+          /* 注册页保持 */
+        } else if (onLogin) {
+          /* 已在登录页 */
         }
       }
       error.message = data?.message || `请求失败 (${status})`;
     } else if (error.request) {
-      error.message = '网络连接失败，请检查后端服务是否运行';
+      if (error.code === 'ECONNABORTED') {
+        error.message = '请求超时，请稍后重试（大模型修图可能需要 1–2 分钟）';
+      } else {
+        error.message = '网络连接失败，请检查后端服务是否运行';
+      }
     }
     return Promise.reject(error);
   },

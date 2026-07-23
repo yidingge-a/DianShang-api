@@ -16,8 +16,12 @@ router = APIRouter()
 
 class ImageOptimizeRequest(BaseModel):
     image_id: str
-    optimize_type: str = "all"
+    # classic | vlm ：两组功能互斥
+    feature_set: str = "classic"
+    optimize_type: str | None = "all"
     intensity: float = Field(0.7, ge=0, le=1)
+    # vlm 集内单选：white_background | remove_defects | auto_crop
+    vlm_action: str | None = None
     white_background: bool = False
     remove_defects: bool = False
     auto_crop: bool = False
@@ -60,6 +64,20 @@ def image_repair(body: ImageRepairRequest, db: Session = Depends(get_db), user: 
 @router.post("/image/batch")
 def image_batch(body: ImageBatchRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user_or_dev)):
     return ok(smart_design_service.batch_images(db, user, body.model_dump()))
+
+
+@router.get("/image/models")
+def image_models(user: User = Depends(get_current_user_or_dev)):
+    """可选生图模型列表（万相 / Gemini）。"""
+    from app.services import image_gen_router
+
+    return ok(image_gen_router.list_models())
+
+
+@router.post("/image/generate")
+def image_generate(body: dict, db: Session = Depends(get_db), user: User = Depends(get_current_user_or_dev)):
+    """文生图 / 图生图：body.prompt 必填；可选 image_model / image_id。"""
+    return ok(smart_design_service.generate_ai_image(db, user, body))
 
 
 @router.post("/detail-page/generate")

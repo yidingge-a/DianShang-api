@@ -22,6 +22,7 @@ import PromotionEffectPage from "./pages/PromotionEffectPage.jsx";
 import DataMonitorPage from "./pages/DataMonitorPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
+import AccountPage from "./pages/AccountPage.jsx";
 
 /**
  * Central place for defining the navigation items. Used for navigation components and routing.
@@ -132,6 +133,11 @@ export const navItems = [
     title: "Data Monitor",
     to: "/data-operation/monitor",
     page: <DataMonitorPage />,
+  },
+  {
+    title: "Account",
+    to: "/account",
+    page: <AccountPage />,
   },
   {
     title: "Login",
