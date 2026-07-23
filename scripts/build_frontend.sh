@@ -17,8 +17,11 @@ fi
 npm ci
 npm run build
 
-rm -rf "$ROOT/frontend_dist"
+# 注意：不要 rm -rf 整个 frontend_dist 目录。
+# Docker nginx 若已 bind-mount 该目录，删除目录 inode 会导致容器内挂载变空 → 首页 403。
 mkdir -p "$ROOT/frontend_dist"
+find "$ROOT/frontend_dist" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+
 # vite outDir 默认 build
 if [ -d build ]; then
   cp -a build/. "$ROOT/frontend_dist/"
