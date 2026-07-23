@@ -66,7 +66,7 @@ def _save_result(img: Image.Image, ext: str = ".jpg") -> tuple[str, str]:
         bg.paste(img, mask=img.split()[3])
         img = bg
     img.save(dest, format=fmt, quality=90)
-    url = f"{settings.base_url.rstrip('/')}/uploads/processed/{dest.name}"
+    url = f"/uploads/processed/{dest.name}"
     return file_id, url
 
 

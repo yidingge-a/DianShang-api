@@ -70,7 +70,7 @@ def _save_png(raw: bytes, *, filename_prefix: str = "") -> tuple[str, str, Path]
     else:
         img = img.convert("RGB")
     img.save(dest, format="PNG", optimize=True)
-    url = f"{settings.base_url.rstrip('/')}/uploads/processed/{dest.name}"
+    url = f"/uploads/processed/{dest.name}"
     return file_id, url, dest
 
 

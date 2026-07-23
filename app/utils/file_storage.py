@@ -72,8 +72,8 @@ def save_upload_file(content: bytes, original_name: str, module: str) -> tuple[s
     if s3_url:
         file_url = s3_url
     else:
-        url_path = f"/uploads/{rel_dir.as_posix()}/{filename}"
-        file_url = f"{settings.base_url.rstrip('/')}{url_path}"
+        # Docker/多域名部署：返回相对路径，由 Nginx 同源反代，避免 BASE_URL=localhost 导致前端裂图
+        file_url = f"/uploads/{rel_dir.as_posix()}/{filename}"
     return file_id, dest_path, file_url
 
 

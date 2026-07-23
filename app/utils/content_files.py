@@ -11,7 +11,7 @@ settings = get_settings()
 
 def _public_url(rel_path: str) -> str:
     """磁盘相对路径 → 浏览器可访问 URL。"""
-    return f"{settings.base_url.rstrip('/')}/uploads/{rel_path.lstrip('/')}"
+    return f"/uploads/{rel_path.lstrip('/')}"
 
 
 def write_detail_page_html(

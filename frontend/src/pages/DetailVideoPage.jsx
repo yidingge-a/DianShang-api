@@ -41,7 +41,7 @@ function loadStoredUploads() {
         file_id: f.file_id,
         file_name: f.file_name || 'image',
         file_url: f.file_url || '',
-        previewUrl: f.file_url || f.previewUrl || '',
+        previewUrl: (f.previewUrl && String(f.previewUrl).startsWith('blob:')) ? f.previewUrl : toAssetPath(f.file_url || f.previewUrl || ''),
         mime_type: f.mime_type,
         file_size: f.file_size,
       }));
@@ -681,8 +681,8 @@ const DetailVideoPage = () => {
                 {uploadedFiles.map(file => (
                   <div key={file.file_id} className="relative group">
                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                      {file.previewUrl || file.file_url
-                        ? <img src={file.previewUrl || file.file_url} alt={file.file_name} className="w-full h-full object-cover" />
+                      {(file.previewUrl || file.file_url)
+                        ? <img src={file.previewUrl?.startsWith('blob:') ? file.previewUrl : toAssetPath(file.previewUrl || file.file_url)} alt={file.file_name} className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center text-gray-400"><FileImageIcon size={32} /></div>}
                     </div>
                     <button

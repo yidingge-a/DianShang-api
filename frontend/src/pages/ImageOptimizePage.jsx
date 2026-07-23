@@ -251,7 +251,7 @@ const ImageOptimizePage = () => {
                   <div key={file.file_id} className="relative group">
                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                       {file.previewUrl ? (
-                        <img src={file.previewUrl} alt={file.file_name} className="w-full h-full object-cover" />
+                        <img src={file.previewUrl?.startsWith("blob:") ? file.previewUrl : toAssetPath(file.previewUrl || file.file_url)} alt={file.file_name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400"><FileImage size={32} /></div>
                       )}
